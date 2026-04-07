@@ -11,5 +11,10 @@ mlruns/
 artifacts/
 
 # Data & models (handled by DVC)
-data/
-models/
+# Ignore actual data, not DVC files
+data/*
+!data/**/*.dvc
+
+models/*
+!models/**/*.dvc
+/models
