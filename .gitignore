@@ -1,4 +1,15 @@
+# Virtual env
 cred/
 venv/
+
+# Python
 __pycache__/
 *.pyc
+
+# ML artifacts
+mlruns/
+artifacts/
+
+# Data & models (handled by DVC)
+data/
+models/
