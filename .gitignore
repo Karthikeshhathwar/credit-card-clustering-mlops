@@ -8,6 +8,7 @@ __pycache__/
 
 # ML artifacts
 mlruns/
+mlflow.db
 artifacts/
 
 # Data & models (handled by DVC)

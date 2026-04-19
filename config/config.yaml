@@ -1,0 +1,45 @@
+data:
+  raw_path: data/raw/credit_card.csv
+  processed_path: data/processed/
+
+preprocessing:
+  log_transform: true
+  clip_lower_quantile: 0.01
+  clip_upper_quantile: 0.99
+
+feature_engineering:
+  drop_columns:
+    - ONEOFF_PURCHASES
+    - INSTALLMENTS_PURCHASES
+    - BALANCE_FREQUENCY
+    - PURCHASES_FREQUENCY
+    - ONEOFFPURCHASESFREQUENCY
+    - PURCHASESINSTALLMENTSFREQUENCY
+    - CASHADVANCEFREQUENCY
+
+model:
+  kmeans:
+    k_range: [2, 10]
+    n_init: 20
+    max_iter: 500
+
+  gmm:
+    covariance_type: full
+    reg_covar: 0.001
+
+  dbscan:
+    eps: 1.2
+    min_samples: 5
+
+pca:
+  enabled: true
+  variance: 0.95
+
+scaler:
+  type: power  # options: standard, robust, power
+
+artifacts:
+  base_path: artifacts/
+
+mlflow:
+  experiment_name: Clustering_Comparison
