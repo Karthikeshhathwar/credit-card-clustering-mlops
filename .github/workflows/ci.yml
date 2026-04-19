@@ -40,21 +40,25 @@ jobs:
     # -------------------------------
     - name: Run flake8
       run: |
+        pip install flake8
         flake8 src/ --max-line-length=120 || true
 
     # -------------------------------
-    # 5. Run tests
-    # -------------------------------
-    - name: Run tests
-      run: |
-        pytest tests/
-
-    # -------------------------------
-    # 6. Run pipeline (REAL test)
+    # Run training pipeline
     # -------------------------------
     - name: Run training pipeline
       run: |
+        export PYTHONPATH=$PYTHONPATH:$(pwd)
         python -m src.pipeline.train_pipeline
+
+# -------------------------------
+# Run tests
+# -------------------------------
+    - name: Run tests
+      run: |
+        pip install pytest
+        export PYTHONPATH=$PYTHONPATH:$(pwd)
+        pytest tests/
 
     # -------------------------------
     # 7. Validate outputs (CRITICAL)
