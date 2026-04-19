@@ -21,45 +21,60 @@ try:
     model = joblib.load("models/kmeans/model.pkl")
     scaler = joblib.load("models/kmeans/scaler.pkl")
     features = joblib.load("models/kmeans/features.pkl")
-
-    # 🔥 Load PCA (critical fix)
     pca = joblib.load("models/kmeans/pca.pkl")
 
 except Exception as e:
     raise RuntimeError(f"Error loading model artifacts: {e}")
 
-n_clusters = model.n_clusters
+
+# Get cluster count dynamically
+n_clusters = getattr(model, "n_clusters", 2)
+
 
 # =========================================================
-# 🔹 Cluster Interpretation
+# 🔹 Cluster Interpretation (FIXED)
 # =========================================================
 def interpret_cluster(cluster, total_clusters):
 
+    # Case: 2 clusters (your current model)
     if total_clusters == 2:
         if cluster == 0:
             return {
-                "segment": "Low Activity Customer",
-                "description": "Low spending and engagement.",
-                "recommendation": "Increase usage with offers."
+                "segment": "High Risk Customer",
+                "description": "Frequent cash advance usage with low repayment behavior.",
+                "recommendation": "Monitor closely, limit credit exposure, and offer repayment plans."
             }
         else:
             return {
                 "segment": "High Value Customer",
-                "description": "High spending and active usage.",
-                "recommendation": "Provide premium benefits."
+                "description": "Active spender with strong repayment habits.",
+                "recommendation": "Offer rewards, increase limits, and provide premium benefits."
             }
 
+    # Case: 3 clusters (future-proof)
     elif total_clusters == 3:
         mapping = {
-            0: "Low Activity",
-            1: "Moderate User",
-            2: "High Value"
+            0: ("Low Activity Customer", "Low spending and engagement."),
+            1: ("Moderate User", "Balanced usage behavior."),
+            2: ("High Value Customer", "High spending and strong repayment.")
         }
+
+        segment, description = mapping.get(cluster, ("Unknown", "Unknown behavior"))
+
         return {
-            "segment": mapping.get(cluster, "Unknown"),
-            "description": "Cluster-based behavior",
-            "recommendation": "Target accordingly"
+            "segment": segment,
+            "description": description,
+            "recommendation": "Apply targeted customer strategy."
         }
+
+    # Default fallback
+    return {
+        "segment": "Unknown",
+        "description": "Cluster not recognized.",
+        "recommendation": "Further analysis required."
+    }
+
+
 # =========================================================
 # 🔹 Root Endpoint
 # =========================================================
@@ -103,17 +118,17 @@ def predict(data: CustomerData):
         X = scaler.transform(df)
 
         # -------------------------------
-        # 5. Apply PCA (CRITICAL)
+        # 5. Apply PCA
         # -------------------------------
         X = pca.transform(X)
 
         # -------------------------------
-        # 6. Predict
+        # 6. Predict cluster
         # -------------------------------
         cluster = int(model.predict(X)[0])
 
         # -------------------------------
-        # 7. Interpret
+        # 7. Interpret cluster
         # -------------------------------
         result = interpret_cluster(cluster, n_clusters)
 
@@ -125,5 +140,4 @@ def predict(data: CustomerData):
         }
 
     except Exception as e:
-        # Helpful debug response
         raise HTTPException(status_code=500, detail=str(e))
