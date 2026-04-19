@@ -2,9 +2,9 @@ name: MLOps CI Pipeline
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
   pull_request:
-    branches: [ "master" ]
+    branches: ["master"]
 
 jobs:
   build-and-test:
@@ -27,7 +27,18 @@ jobs:
         python-version: "3.10"
 
     # -------------------------------
-    # 3. Install dependencies
+    # 3. Cache dependencies (FASTER CI)
+    # -------------------------------
+    - name: Cache pip
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    # -------------------------------
+    # 4. Install dependencies
     # -------------------------------
     - name: Install dependencies
       run: |
@@ -36,42 +47,78 @@ jobs:
         pip install pytest flake8
 
     # -------------------------------
-    # 4. Lint (code quality)
+    # 5. Set PYTHONPATH (FIX import issue)
+    # -------------------------------
+    - name: Set PYTHONPATH
+      run: echo "PYTHONPATH=$(pwd)" >> $GITHUB_ENV
+
+    # -------------------------------
+    # 6. Download Kaggle dataset (CORRECT)
+    # -------------------------------
+    - name: Download Kaggle dataset
+      env:
+        KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+        KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      run: |
+        pip install kaggle
+
+        mkdir -p ~/.kaggle
+        echo "{\"username\":\"$KAGGLE_USERNAME\",\"key\":\"$KAGGLE_KEY\"}" > ~/.kaggle/kaggle.json
+        chmod 600 ~/.kaggle/kaggle.json
+
+        mkdir -p data/raw
+
+        kaggle datasets download -d arjunbhasin2013/ccdata -p data/raw --unzip
+
+        # Rename to match your pipeline
+        mv data/raw/CC\ GENERAL.csv data/raw/credit_card.csv
+
+    # -------------------------------
+    # 7. Lint (non-blocking)
     # -------------------------------
     - name: Run flake8
       run: |
-        pip install flake8
         flake8 src/ --max-line-length=120 || true
 
     # -------------------------------
-    # Run training pipeline
+    # 8. Run training pipeline
     # -------------------------------
     - name: Run training pipeline
       run: |
-        export PYTHONPATH=$PYTHONPATH:$(pwd)
         python -m src.pipeline.train_pipeline
 
-# -------------------------------
-# Run tests
-# -------------------------------
-    - name: Run tests
-      run: |
-        pip install pytest
-        export PYTHONPATH=$PYTHONPATH:$(pwd)
-        pytest tests/
-
     # -------------------------------
-    # 7. Validate outputs (CRITICAL)
+    # 9. Validate outputs (CRITICAL)
     # -------------------------------
     - name: Validate outputs
       run: |
+        echo "Checking artifacts..."
         test -f artifacts/reports/model_comparison.csv
         test -f models/kmeans/model.pkl
         test -f models/kmeans/scaler.pkl
-        echo "Artifacts validated successfully"
+        test -f models/kmeans/features.pkl
+        echo "Artifacts validated successfully ✅"
 
     # -------------------------------
-    # 8. Clean MLflow (avoid CI issues)
+    # 10. Run tests
+    # -------------------------------
+    - name: Run tests
+      run: |
+        pytest tests/
+
+    # -------------------------------
+    # 11. Upload artifacts (VERY USEFUL)
+    # -------------------------------
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: model-artifacts
+        path: |
+          artifacts/
+          models/
+
+    # -------------------------------
+    # 12. Cleanup MLflow (avoid CI conflicts)
     # -------------------------------
     - name: Cleanup MLflow artifacts
       run: |
