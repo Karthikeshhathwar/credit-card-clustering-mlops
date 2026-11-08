@@ -24,9 +24,9 @@ from src.models.train_meanshift import train_meanshift
 
 
 # =========================================================
-# 🔹 MLflow Setup (FIXED)
+# 🔹 MLflow Setup
 # =========================================================
-mlflow.set_tracking_uri("sqlite:///mlflow.db")   # 🔥 IMPORTANT
+mlflow.set_tracking_uri("sqlite:///mlflow.db") 
 mlflow.set_experiment("Clustering_Comparison")
 
 
@@ -99,7 +99,6 @@ def save_artifacts(model_name, df, labels, X, metrics):
     except Exception as e:
         print(f"Plot error: {e}")
 
-    # 🔥 Log to MLflow
     mlflow.log_artifact(clustered_path)
     mlflow.log_artifact(metrics_path)
     mlflow.log_artifact(plot_path)
